@@ -1,20 +1,30 @@
-const { Client } = require('pg');
+const { Pool } = require('pg');
 
-const client = new Client({
-  user: 'vagrant',
-  password: '123'
+const cohortName = process.argv[2];
+
+const values = [cohortName]
+
+
+const pool = new Pool ({
+  user: 'vagrant', 
+  password: '123',
   host: 'localhost',
   database: 'bootcampx'
-});
+})
 
 
-$ node teachers.js JUL02
-connected
-JUL02: Cheyanne Powlowski
-JUL02: Georgiana Fahey
-JUL02: Helmer Rodriguez
-JUL02: Jadyn Bosco
-JUL02: Roberto Towne
-JUL02: Rosalyn Raynor
-JUL02: Talon Gottlieb
-JUL02: Waylon Boehm
+pool.query(`
+SELECT DISTINCT teachers.name as teacher, cohorts.name as cohort
+FROM teachers
+JOIN assistance_requests ON teacher_id = teachers.id
+JOIN students ON students.id = student_id
+JOIN cohorts ON cohorts.id = cohort_id
+WHERE cohorts.name= $1
+ORDER BY teachers.name;
+`, values)
+.then(res => {
+  res.rows.forEach(row => {
+    console.log(`${row.cohort}: ${row.teacher}`);
+  })
+})
+.catch(err => console.error('query error', err.stack));
